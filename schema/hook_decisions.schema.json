@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hook Decision Event",
+  "description": "A single PreToolUse gate decision. One JSON object per line (JSONL).",
+  "type": "object",
+  "required": ["hook", "decision", "epoch"],
+  "properties": {
+    "hook": {
+      "type": "string",
+      "description": "Name of the hook/rule that fired",
+      "examples": ["fact_check", "rules_compliance", "anti_rationalization"]
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "warn", "deny", "block"],
+      "description": "allow=passed, warn=passed with flag, deny=soft block, block=hard stop"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable explanation of the decision"
+    },
+    "target": {
+      "type": "string",
+      "description": "The tool call or action that was intercepted"
+    },
+    "epoch": {
+      "type": "number",
+      "description": "Unix timestamp (seconds)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier (optional but recommended)"
+    }
+  }
+}

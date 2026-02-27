@@ -1,0 +1,8 @@
+{"tool": "Read", "target": "~/.mirrordna/CONTINUITY.md", "session_id": "SR-2026-02-27-abc", "epoch": 1740624000}
+{"tool": "Read", "target": "~/.mirrordna/SHIPLOG.md", "session_id": "SR-2026-02-27-abc", "epoch": 1740624010}
+{"tool": "Grep", "target": "search query", "session_id": "SR-2026-02-27-abc", "epoch": 1740624020}
+{"tool": "Read", "target": "~/repos/project/main.py", "session_id": "SR-2026-02-27-abc", "epoch": 1740624030}
+{"tool": "Edit", "target": "~/repos/project/main.py", "session_id": "SR-2026-02-27-abc", "epoch": 1740624040}
+{"tool": "Bash", "target": "python3 test.py", "session_id": "SR-2026-02-27-abc", "epoch": 1740624050}
+{"tool": "Read", "target": "~/repos/project/config.yaml", "session_id": "SR-2026-02-27-abc", "epoch": 1740624060}
+{"tool": "Write", "target": "~/repos/project/output.py", "session_id": "SR-2026-02-27-abc", "epoch": 1740624070}

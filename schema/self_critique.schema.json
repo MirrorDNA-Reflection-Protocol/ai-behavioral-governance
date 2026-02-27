@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session Self-Critique",
+  "description": "Agent self-assessment written at session end. One JSON object per line (JSONL).",
+  "type": "object",
+  "required": ["date", "score"],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Session date YYYY-MM-DD"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Self-assessed session quality. 5=average, 8+=shipped cleanly."
+    },
+    "mistakes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Short descriptions of mistakes made this session"
+    },
+    "recurring": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Patterns that also appeared in past sessions (subset of mistakes)"
+    },
+    "automated": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Mistakes that were converted to automated hooks/scripts this session"
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Problems noticed but not fixed this session"
+    }
+  }
+}
