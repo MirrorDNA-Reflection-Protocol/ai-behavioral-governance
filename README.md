@@ -1,168 +1,117 @@
 # AI Behavioral Governance
 
-**A framework for measurable, auditable, self-stabilizing AI agents.**
+Five quantitative metrics for measuring AI agent behavioral integrity over time. An open standard for systems that require auditable, self-stabilizing agent behavior.
 
-Five metrics that answer the question nobody's asking: *is your AI agent actually behaving well?*
-
-Not "does it complete tasks" — it does. But does it verify before it acts? Does it make the same mistakes repeatedly? Is its behavior consistent across sessions, or is it drifting?
-
-[![Integrity Index](https://activemirror.ai/governance-metrics.json)](https://activemirror.ai/governance-live)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+## Overview
+
+Most evaluations of AI agent quality measure task completion. This framework measures something different: whether the agent's operational behavior is consistent, self-correcting, and structurally sound across sessions.
+
+The five metrics answer a question that capability benchmarks do not: is the agent making the same mistakes repeatedly, drifting between sessions, or writing without verifying?
 
 ## The Five Metrics
 
-| Metric | Definition | Target |
-|--------|-----------|--------|
-| **Integrity Index** | Composite 0–100 score from gate violations + read:write ratio + recurring patterns | ≥ 80 |
-| **Drift Coefficient** | σ/μ of session quality scores — behavioral consistency over time | ≤ 0.15 |
-| **Recurrence Rate** | recurring_mistakes / total_mistakes — do the same errors keep coming back? | ≤ 0.20 |
-| **Verification Ratio** | reads / (reads+writes) — does the agent look before it leaps? | ≥ 0.67 |
-| **Stability Half-Life** | Avg sessions a recurring pattern persists before resolution | ≤ 1.5 sessions |
-
-**Live reference values** from the Active Mirror production agent: [activemirror.ai/governance-live](https://activemirror.ai/governance-live)
-
----
+| Metric | Definition | Target | Unit |
+|--------|-----------|--------|------|
+| **Integrity Index** | Composite score derived from gate violations, read:write ratio, and recurring patterns | >= 80 | 0--100 |
+| **Drift Coefficient** | Coefficient of variation (sigma/mu) of session quality scores | <= 0.15 | sigma/mu |
+| **Recurrence Rate** | Fraction of documented mistakes that are recurring across sessions | <= 0.20 | fraction |
+| **Verification Ratio** | Reads / (reads + writes) -- does the agent verify before acting? | >= 0.67 | fraction |
+| **Stability Half-Life** | Average number of sessions a recurring pattern persists before resolution | <= 1.5 | sessions |
 
 ## Data Schema
 
-Two JSONL files power all five metrics:
+All five metrics are computed from three JSONL log files:
 
-### `cc_events.jsonl` — tool call log
-```json
-{"tool": "Read", "target": "~/.mirrordna/CONTINUITY.md", "session_id": "SR-2026-02-27", "epoch": 1740624000}
-{"tool": "Edit", "target": "~/repos/project/main.py", "session_id": "SR-2026-02-27", "epoch": 1740624120}
+**`cc_events.jsonl`** -- Tool call log. Each line records a tool invocation with tool name, target, session ID, and Unix timestamp.
+
+**`hook_decisions.jsonl`** -- Gate decision log. Each line records a governance gate firing with hook name, decision (`allow` | `warn` | `deny` | `block`), reason, and target.
+
+**`self_critique.jsonl`** -- Session self-assessment log. Each line records a session's quality score (1--10), list of mistakes, list of recurring patterns, automated fixes applied, and unresolved issues.
+
+Full JSON Schema definitions are in the `schema/` directory.
+
+## Usage
+
+```bash
+python3 behavioral_metrics.py \
+  --cc-events path/to/cc_events.jsonl \
+  --gate-decisions path/to/hook_decisions.jsonl \
+  --self-critique path/to/self_critique.jsonl
 ```
 
-### `hook_decisions.jsonl` — gate decision log (the enforcement layer)
-```json
-{"hook": "fact_check", "decision": "block", "reason": "Known-wrong hardware spec", "target": "Write Papers/report.md", "epoch": 1740624000}
-{"hook": "rules_compliance", "decision": "warn", "reason": "Deploy claim without verification", "target": "Bash git push", "epoch": 1740624120}
-{"hook": "anti_rationalization", "decision": "allow", "reason": "Source verified in FACTS.md", "target": "Write Papers/report.md", "epoch": 1740624240}
-```
-
-**Decision values:** `allow` | `warn` | `deny` | `block`
-
-### `self_critique.jsonl` — session self-assessment log
-```json
-{
-  "date": "2026-02-27",
-  "session_id": "SR-2026-02-27-abc123",
-  "score": 7,
-  "mistakes": ["Wrote without reading file first", "Overcomplicated solution"],
-  "recurring": ["Writing before reading"],
-  "automated": ["Added PreToolUse hook for write-without-read pattern"],
-  "unresolved": ["Need to fix deploy gate false positives"]
-}
-```
-
-**Full schema definitions:** `schema/`
-
----
-
-## Computing the Metrics
+Or programmatically:
 
 ```python
 from behavioral_metrics import compute_all
 
 metrics = compute_all(
-    cc_events_path="~/.mirrordna/bus/cc_events.jsonl",
-    hook_decisions_path="~/.mirrordna/bus/hook_decisions.jsonl",
-    self_critique_path="~/.mirrordna/self_critique.jsonl"
+    cc_events_path="path/to/cc_events.jsonl",
+    hook_decisions_path="path/to/hook_decisions.jsonl",
+    self_critique_path="path/to/self_critique.jsonl"
 )
 
-print(metrics["integrity_index"])    # {"value": 54, "grade": "RISK", ...}
-print(metrics["drift_coefficient"])  # {"value": 0.259, "grade": "drifting", ...}
-print(metrics["recurrence_rate"])    # {"value": 0.43, "grade": "high", ...}
+print(metrics["integrity_index"])     # {"value": 82, "grade": "CLEAN", ...}
+print(metrics["drift_coefficient"])   # {"value": 0.12, "grade": "stable", ...}
+print(metrics["recurrence_rate"])     # {"value": 0.18, "grade": "good", ...}
 ```
 
----
-
-## Quick Start
-
-```bash
-pip install ai-behavioral-governance   # coming soon
-
-# Or run directly:
-python3 behavioral_metrics.py \
-  --cc-events ~/.mirrordna/bus/cc_events.jsonl \
-  --gate-decisions ~/.mirrordna/bus/hook_decisions.jsonl \
-  --self-critique ~/.mirrordna/self_critique.jsonl
-```
-
----
-
-## Dashboard
-
-The [MirrorDash](https://github.com/MirrorDNA-Reflection-Protocol/mirrordash) Glass Box profile renders all five metrics live in a terminal dashboard:
-
-```bash
-git clone https://github.com/MirrorDNA-Reflection-Protocol/mirrordash
-cd mirrordash
-pip install rich pyyaml
-python3 mirrordash.py --profile glass
-```
-
----
+Add `--json` for machine-readable output.
 
 ## The Self-Hardening Loop
 
-The key design principle: patterns that recur across sessions must be automated.
+The framework is designed as a closed feedback loop, not a passive dashboard:
 
-```
-Mistake documented → self_critique.jsonl
-Recurs in next session → flagged as recurring
-Recurs in 2+ sessions → mandatory PreToolUse hook
-Hook fires → logged to hook_decisions.jsonl
-Gate violations → penalize Integrity Index
-High RR/D → trigger autonomy reduction
-```
+1. A mistake is documented in `self_critique.jsonl`
+2. If the same mistake recurs in a subsequent session, it is flagged as recurring
+3. If it recurs in two or more sessions, it becomes a mandatory gate rule (`hook_decisions.jsonl`)
+4. Gate violations penalize the Integrity Index
+5. Sustained high Recurrence Rate or Drift Coefficient triggers autonomy reduction
 
-This is not just monitoring — it's a closed feedback loop that makes the system structurally harder over time.
-
----
+This produces a system that becomes structurally harder to misuse over time. Patterns that persist are converted from observations into enforcement rules.
 
 ## Autonomy Reduction Protocol
 
-When metrics enter danger zones:
+When metrics enter defined danger zones, the system constrains agent autonomy:
 
-| Trigger | Response |
-|---------|----------|
-| D > 0.30 for 3 sessions | Require confirmation on all edits |
-| II < 40 | Require confirmation on all writes |
-| Blocks > 5 in 1 hour | Halt autonomous execution, alert human |
-
----
+| Condition | Response |
+|-----------|----------|
+| Drift Coefficient > 0.30 for 3 consecutive sessions | Require human confirmation on all edits |
+| Integrity Index < 40 | Require human confirmation on all writes |
+| Gate blocks > 5 within 1 hour | Halt autonomous execution; alert human operator |
 
 ## Interpretation Guide
 
-**T½=1.0 with RR=0.43** (the Active Mirror current state):
-The agent fixes individual instances quickly but keeps generating new instances of the same mistake classes. This is a *structural enforcement gap*, not a capability gap. Fix: convert top-N recurring patterns into PreToolUse hooks. Expected outcome: RR drops to ~0.20, II rises above 70.
+**High Recurrence Rate with low Stability Half-Life:** The agent fixes individual instances quickly but continues generating new instances of the same mistake class. This is a structural enforcement gap. Resolution: convert the top-N recurring patterns into gate rules.
 
-**D > 0.30**:
-Session quality varies widely. Usually caused by context loss between sessions (stale CONTINUITY.md) or new domain work without established patterns. Fix: improve session handoff artifacts.
+**Drift Coefficient > 0.30:** Session quality varies widely, typically caused by context loss between sessions or new domain work without established patterns. Resolution: improve session handoff artifacts.
 
-**VR < 0.50**:
-Agent is writing from memory. Every edit should be preceded by a read. Fix: enforce read-before-write in hook layer.
+**Verification Ratio < 0.50:** The agent is writing from memory rather than verifying against source. Resolution: enforce read-before-write in the gate layer.
 
----
+## Requirements
+
+Python 3.8 or later. Standard library only; no external dependencies.
 
 ## Contributing
 
-This is a proposed open standard. Issues and PRs welcome, especially:
-- Implementations in other languages (JS, Go, Rust)
-- Adapters for other AI coding tools (Cursor, Copilot, Aider)
-- Additional metrics proposals with mathematical grounding
+This is a proposed open standard. Contributions are welcome:
+
+- Implementations in other languages (JavaScript, Go, Rust)
+- Adapters for AI coding tools (Cursor, Copilot, Aider)
+- Additional metrics proposals with formal definitions
+
+## Related Research
+
+- Desai, P. (2025). *Governance and Boundary Conditions for Reflective AI Systems.* DOI: [10.5281/zenodo.18212080](https://doi.org/10.5281/zenodo.18212080)
+- Desai, P. (2025). *Layered Governance for Large Language Model Systems.* DOI: [10.5281/zenodo.18212082](https://doi.org/10.5281/zenodo.18212082)
+
+## License
+
+MIT License.
 
 ---
 
-## Reference
-
-**Live demo:** [activemirror.ai/governance-live](https://activemirror.ai/governance-live)
-**Blog post:** [I gave my AI an integrity score](https://activemirror.ai/blog/posts/2026-02-27-i-gave-my-ai-an-integrity-score.html)
-**Dashboard:** [MirrorDash](https://github.com/MirrorDNA-Reflection-Protocol/mirrordash)
-**Built by:** [Paul Desai](https://activemirror.ai) · Active Mirror
-
----
-
-MIT License
+Built by [Active Mirror](https://activemirror.ai) -- Governed AI for Institutional Work.
